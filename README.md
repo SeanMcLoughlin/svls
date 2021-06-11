@@ -67,6 +67,14 @@ Linter uses `.svlint.toml` at the root of repository.
 If `.svlint.toml` can't be used, all lint rules are enabled.
 Please see [svlint#configuration](https://github.com/dalance/svlint#configuration) for the detailed information.
 
+### Debug and Logging
+svls has several flags for logging information for debug.
+```
+--log-file <log-file>   The file to print log information to [default: svls.log]
+--log-level <log-level> The level of log printing [default: LevelFilter::Off]  
+                        [possible values: off, trace, debug, info, warn, error]
+```
+
 ## Usage
 
 ### Visual Studio Code

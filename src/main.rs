@@ -1,41 +1,26 @@
-mod backend;
-mod config;
-
 use backend::Backend;
 use log::debug;
+use opt::Opt;
 use simplelog::{Config, LevelFilter, WriteLogger};
+use std::error::Error;
 use std::fs::File;
-use structopt::{clap, StructOpt};
+use structopt::StructOpt;
 use tower_lsp::{LspService, Server};
 
-// -------------------------------------------------------------------------------------------------
-// Opt
-// -------------------------------------------------------------------------------------------------
-
-#[derive(Debug, StructOpt)]
-#[structopt(name = "svls")]
-#[structopt(long_version(option_env!("LONG_VERSION").unwrap_or(env!("CARGO_PKG_VERSION"))))]
-#[structopt(setting(clap::AppSettings::ColoredHelp))]
-pub struct Opt {
-    /// Debug mode
-    #[structopt(short = "d", long = "debug")]
-    pub debug: bool,
-}
-
-// -------------------------------------------------------------------------------------------------
-// Main
-// -------------------------------------------------------------------------------------------------
+mod backend;
+mod config;
+mod opt;
 
 #[tokio::main(flavor = "current_thread")]
-async fn main() {
+async fn main() -> Result<(), Box<dyn Error>> {
     let opt = Opt::from_args();
 
-    if opt.debug {
-        let _ = WriteLogger::init(
-            LevelFilter::Debug,
+    if opt.log_level != LevelFilter::Off {
+        WriteLogger::init(
+            opt.log_level,
             Config::default(),
-            File::create("svls.log").unwrap(),
-        );
+            File::create(opt.log_file)?,
+        )?;
     }
 
     debug!("start");
@@ -43,9 +28,11 @@ async fn main() {
     let stdin = tokio::io::stdin();
     let stdout = tokio::io::stdout();
 
-    let (service, messages) = LspService::new(|client| Backend::new(client));
+    let (service, messages) = LspService::new(Backend::new);
     Server::new(stdin, stdout)
         .interleave(messages)
         .serve(service)
         .await;
+
+    Ok(())
 }
