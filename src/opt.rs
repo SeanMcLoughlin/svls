@@ -7,11 +7,11 @@ use structopt::{clap, StructOpt};
 #[structopt(setting(clap::AppSettings::ColoredHelp))]
 pub struct Opt {
     #[structopt(
-        long="log-level", 
-        possible_values=&["off", "trace", "debug", "info", "warn", "error"], 
-        default_value="LevelFilter::Off", 
-        help="The level of log printing")
-    ]
+        long = "log-level", 
+        possible_values = &["off", "trace", "debug", "info", "warn", "error"], 
+        default_value = "off", 
+        help = "The level of log printing"
+    )]
     pub log_level: LevelFilter,
 
     #[structopt(
