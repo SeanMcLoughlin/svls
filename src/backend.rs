@@ -96,9 +96,9 @@ impl Backend {
                                     Position::new(line, col + failed.len as u32),
                                 ),
                                 Some(DiagnosticSeverity::Warning),
-                                Some(NumberOrString::String(String::from(failed.name))),
+                                Some(NumberOrString::String(failed.name)),
                                 Some(String::from("svls")),
-                                String::from(failed.hint),
+                                failed.hint,
                                 None,
                                 None,
                             ));
@@ -108,27 +108,21 @@ impl Backend {
             }
             Err(x) => {
                 debug!("parse_error: {:?}", x);
-                match x {
-                    sv_parser::Error::Parse(Some((path, pos))) => {
-                        if path == PathBuf::from("") {
-                            let (line, col) = get_position(s, pos);
-                            let line_end = get_line_end(s, pos);
-                            let len = line_end - pos as u32;
-                            ret.push(Diagnostic::new(
-                                Range::new(
-                                    Position::new(line, col),
-                                    Position::new(line, col + len),
-                                ),
-                                Some(DiagnosticSeverity::Error),
-                                None,
-                                Some(String::from("svls")),
-                                String::from("parse error"),
-                                None,
-                                None,
-                            ));
-                        }
+                if let sv_parser::Error::Parse(Some((path, pos))) = x {
+                    if path == PathBuf::from("") {
+                        let (line, col) = get_position(s, pos);
+                        let line_end = get_line_end(s, pos);
+                        let len = line_end - pos as u32;
+                        ret.push(Diagnostic::new(
+                            Range::new(Position::new(line, col), Position::new(line, col + len)),
+                            Some(DiagnosticSeverity::Error),
+                            None,
+                            Some(String::from("svls")),
+                            String::from("parse error"),
+                            None,
+                            None,
+                        ));
                     }
-                    _ => (),
                 }
             }
         }
@@ -181,9 +175,7 @@ impl LanguageServer for Backend {
                 workspace: Some(WorkspaceServerCapabilities {
                     workspace_folders: Some(WorkspaceFoldersServerCapabilities {
                         supported: Some(true),
-                        change_notifications: Some(
-                            OneOf::Left(true),
-                        ),
+                        change_notifications: Some(OneOf::Left(true)),
                     }),
                     file_operations: None,
                 }),
@@ -198,7 +190,7 @@ impl LanguageServer for Backend {
 
     async fn initialized(&self, _: InitializedParams) {
         self.client
-            .log_message(MessageType::Info, &format!("server initialized"))
+            .log_message(MessageType::Info, &"server initialized".to_string())
             .await;
     }
 
@@ -224,7 +216,11 @@ impl LanguageServer for Backend {
         debug!("did_change");
         let diag = self.lint(&params.content_changes[0].text);
         self.client
-            .publish_diagnostics(params.text_document.uri, diag, Some(params.text_document.version))
+            .publish_diagnostics(
+                params.text_document.uri,
+                diag,
+                Some(params.text_document.version),
+            )
             .await;
     }
 }
@@ -283,7 +279,7 @@ fn generate_linter(config: Option<PathBuf>) -> std::result::Result<Linter, Strin
             ))
         }
     } else {
-        Err(format!(".svlint.toml is not found. Enable all lint rules."))
+        Err(".svlint.toml is not found. Enable all lint rules.".to_string())
     }
 }
 
